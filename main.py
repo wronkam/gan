@@ -6,6 +6,7 @@ import torchvision.transforms as T
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
 
+from models import GAN, Generator, Discriminator
 from models64 import *
 from train import Trainer
 from util import *
@@ -15,7 +16,7 @@ parser.add_argument('--source', type=str, help='path to inputs folder', default=
 parser.add_argument('--sample_rate', type=int, help='epochs between samples', default=10,required=False)
 parser.add_argument('--checkpoint_rate', type=int, help='epochs between checkpoints', default=25,required=False)
 parser.add_argument('--start', type=int, help='epoch to start from', default=0,required=False)
-parser.add_argument('--name', type=str, help='save dir name') # !!!!
+parser.add_argument('--name', type=str, help='save dir name',default='',required=False)
 parser.add_argument('--epochs', type=int, help='num of epochs to train',default=301,required=False)
 parser.add_argument('--lr', type=float, help='learning rate', default=0.0002,required=False)
 parser.add_argument('--bc', type=int, help='batch size', default=64,required=False)
@@ -103,7 +104,8 @@ def fit(epochs, lr, fixed_latent, generator, discriminator, start_idx=0, name="m
                                                          generator.__class__.__name__,
                                                          discriminator.__class__.__name__,
                                                          str(round(args.lr,6))[2:],str(round(args.noise_std,6))[2:],
-                                                         str(round(args.noise_fade,4))[2:]),prefix=args.name+'/')
+                                                         str(round(args.noise_fade,4))[2:]),
+                  prefix=args.name+'/')
     return losses_g, losses_d, real_scores, fake_scores
 
 
@@ -111,13 +113,47 @@ def fit(epochs, lr, fixed_latent, generator, discriminator, start_idx=0, name="m
 if __name__ == '__main__':
 
     torch.manual_seed(42)
-    if args.config is None:
+    device = get_default_device(random.randint(0, args.gpu_pool-1))
+    if args.config is None or args.config == 'mixed64':
         latent_size = 64
         image_size = 64
+        model = GAN(GeneratorSkip64(latent_size, device).to(device), DiscriminatorResidual64().to(device))
+    elif args.config == 'simple32':
+        latent_size = 32
+        image_size = 32
+        model = GAN(Generator(latent_size).to(device), Discriminator().to(device))
+    elif args.config == 'simple64':
+        latent_size = 64
+        image_size = 64
+        model = GAN(Generator64(latent_size).to(device), Discriminator64().to(device))
+    elif args.config == 'skip64':
+        latent_size = 64
+        image_size = 64
+        model = GAN(GeneratorSkip64(latent_size,device).to(device), DiscriminatorSkip64(device).to(device))
+    elif args.config == 'residual64':
+        latent_size = 64
+        image_size = 64
+        model = GAN(GeneratorResidual64(latent_size,device).to(device), DiscriminatorResidual64().to(device))
+    elif args.config == 'mixed64':
+        latent_size = 64
+        image_size = 64
+        model = GAN(GeneratorSkip64(latent_size,device).to(device), DiscriminatorResidual64().to(device))
+    elif args.config == 'FFMixed64':
+        latent_size = 32
+        image_size = 64
+        model = GAN(GeneratorIntermidiate64(latent_size,device).to(device), DiscriminatorResidual64().to(device))
     else:
         latent_size = 64
         image_size = 64
+        model = GAN(GeneratorSkip64(latent_size, device).to(device), DiscriminatorResidual64().to(device))
+
     args.image_size = image_size
+    if args.name == '':
+        args.name ='{}_{}_{}_{}_lr{}_noise{}_{}'.format(args.name, args.image_size,
+                                         model.generator.__class__.__name__,
+                                         model.discriminator.__class__.__name__,
+                                         str(round(args.lr, 6))[2:], str(round(args.noise_std, 6))[2:],
+                                         str(round(args.noise_fade, 4))[2:])
 
     train_ds = ImageFolder(args.source, transform=T.Compose([
         T.Resize(image_size),
@@ -132,36 +168,15 @@ if __name__ == '__main__':
     else:
         train_dl = DataLoader(train_ds, args.bc, shuffle=True, num_workers=3, pin_memory=True)
 
-    device = get_default_device(random.randint(0, args.gpu_pool-1))
 
     train_dl = DeviceDataLoader(train_dl, device)
 
-    # discriminatorModel = Discriminator().to(device)
-    # discriminatorModel = DiscriminatorResidual().to(device)
-    # discriminatorModel = DiscriminatorSkip(device).to(device)
-    discriminatorModel = DiscriminatorResidual64().to(device)
-    # discriminatorModel = DiscriminatorSkip64(device).to(device)
-
-    # generatorModel = Generator(latent_size).to(device)
-    # generatorModel = GeneratorResidual(latent_size,device).to(device)
-    # generatorModel = GeneratorSkip(latent_size,device).to(device)
-    # generatorModel = Generator64(latent_size).to(device)
-    generatorModel = GeneratorSkip64(latent_size, device).to(device)
 
     os.makedirs(args.name, exist_ok=True)
 
     fixed_latent = torch.randn(64, latent_size, 1, 1, device=device)
-    gen_save_samples(generatorModel, args.name, 0, fixed_latent, stats)
-    history = fit(args.epochs, args.lr, fixed_latent, generatorModel, discriminatorModel, start_idx=args.start,
+    gen_save_samples(model.generator, args.name, 0, fixed_latent, stats)
+    history = fit(args.epochs, args.lr, fixed_latent, model.generator, model.discriminator, start_idx=args.start,
                   std=args.noise_std, fade_noise=((args.noise_fade * args.noise_std > 0), args.noise_fade))
     print('done')
 
-"""
-Notes:
-    - disable blur
-    - add noise to discriminator input
-    - disable spectral norm (kills some of variation, and bleaches vibrant colors)
-    - initiate from orthogonal
-    - make noise linearly fade to fractional (nonzero) value
-    - penalize overconfidence
-"""

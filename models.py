@@ -254,6 +254,7 @@ class GeneratorIntermidiate(Generator):
         ])
 
     def forward(self, x):
+        x = torch.nn.functional.normalize(x,p=len(x))
         x = torch.view_as_real(torch.fft.rfftn(x,s=4,norm="ortho"))
         x = nn.Flatten()(x)
         x = x[:, :, None, None]
@@ -262,4 +263,9 @@ class GeneratorIntermidiate(Generator):
         for fin in self.finisher:
             x = fin(x)
         return x
+
+class GAN:
+    def __init__(self,gen,disc):
+        self.generator=gen
+        self.discriminator =disc
 
