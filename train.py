@@ -1,7 +1,6 @@
-import torch
 import torch.nn.functional as F
 
-import util
+from util import *
 
 
 class Trainer():
@@ -49,7 +48,8 @@ class Trainer():
         fake_images = s.generator(latent)
 
         # Try to fool the discriminator
-        fake_images = util.addGaussianNoise(fake_images,s.device,std=std)
+        if std>0:
+            fake_images = addGaussianNoise(fake_images,s.device,std=std)
         preds = s.discriminator(fake_images)
         targets = torch.ones(s.batch_size, 1, device=s.device)
         loss = F.binary_cross_entropy(preds, targets)
