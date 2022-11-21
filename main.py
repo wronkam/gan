@@ -123,6 +123,7 @@ def fit(epochs, lr, fixed_latent, generator, discriminator, start_idx=0, name="m
 if __name__ == '__main__':
 
     torch.manual_seed(42)
+    args.config = args.config.lower()
     device = get_default_device(random.randint(0, args.gpu_pool-1))
     if args.config is None or args.config == 'mixed64':
         latent_size = 64
@@ -144,7 +145,7 @@ if __name__ == '__main__':
         latent_size = 64
         image_size = 64
         model = GAN(GeneratorResidual64(latent_size,device).to(device), DiscriminatorResidual64().to(device))
-    elif args.config == 'FFMixed64':
+    elif args.config == 'ffmixed64':
         latent_size = 32
         image_size = 64
         model = GAN(GeneratorIntermidiate64(latent_size,device).to(device), DiscriminatorResidual64().to(device))
@@ -187,5 +188,11 @@ if __name__ == '__main__':
 
 """
 example run:
-python3 main.py --sample_rate 10 --checkpoint_rate 50 --epochs 200 --small False --gpu_pool 1 --noise_std 0.08 --noise_fade 0.3 --config FFMixed64
+python3 main.py --sample_rate 15 --checkpoint_rate 50 --epochs 210 --small false --gpu_pool 1 --noise_std 0.00 --noise_fade 0.0 --config simple32
+python3 main.py --sample_rate 15 --checkpoint_rate 50 --epochs 210 --small false --gpu_pool 1 --noise_std 0.00 --noise_fade 0.0 --config simple64
+python3 main.py --sample_rate 10 --checkpoint_rate 50 --epochs 200 --small False --gpu_pool 1 --noise_std 0.08 --noise_fade 0.3 --config skip64
+python3 main.py --sample_rate 15 --checkpoint_rate 50 --epochs 210 --small false --gpu_pool 1 --noise_std 0.08 --noise_fade 0.3 --config residual64 
+python3 main.py --sample_rate 15 --checkpoint_rate 50 --epochs 210 --small false --gpu_pool 1 --noise_std 0.24 --noise_fade 0.3 --config residual64 --name 64_residual_noised
+python3 main.py --sample_rate 15 --checkpoint_rate 50 --epochs 210 --small false --gpu_pool 1 --noise_std 0.08 --noise_fade 0.3 --config mixed64
+python3 main.py --sample_rate 15 --checkpoint_rate 50 --epochs 210 --small false --gpu_pool 1 --noise_std 0.08 --noise_fade 0.2 --config ffmixed64
 """
