@@ -190,9 +190,9 @@ if __name__ == '__main__':
 example run:
 python3 main.py --sample_rate 15 --checkpoint_rate 50 --epochs 210 --small false --gpu_pool 1 --noise_std 0.00 --noise_fade 0.0 --config simple32
 python3 main.py --sample_rate 15 --checkpoint_rate 50 --epochs 210 --small false --gpu_pool 1 --noise_std 0.00 --noise_fade 0.0 --config simple64
-python3 main.py --sample_rate 10 --checkpoint_rate 50 --epochs 200 --small False --gpu_pool 1 --noise_std 0.08 --noise_fade 0.3 --config skip64
-python3 main.py --sample_rate 15 --checkpoint_rate 50 --epochs 210 --small false --gpu_pool 1 --noise_std 0.08 --noise_fade 0.3 --config residual64 
-python3 main.py --sample_rate 15 --checkpoint_rate 50 --epochs 210 --small false --gpu_pool 1 --noise_std 0.24 --noise_fade 0.3 --config residual64 --name 64_residual_noised
-python3 main.py --sample_rate 15 --checkpoint_rate 50 --epochs 210 --small false --gpu_pool 1 --noise_std 0.08 --noise_fade 0.3 --config mixed64
+python3 main.py --sample_rate 10 --checkpoint_rate 50 --epochs 200 --small False --gpu_pool 1 --noise_std 0.08 --noise_fade 0.25 --config skip64
+python3 main.py --sample_rate 15 --checkpoint_rate 50 --epochs 210 --small false --gpu_pool 1 --noise_std 0.08 --noise_fade 0.25 --config residual64 
+python3 main.py --sample_rate 15 --checkpoint_rate 50 --epochs 210 --small false --gpu_pool 1 --noise_std 0.24 --noise_fade 0.35 --config residual64 --name 64_residual_noised
+python3 main.py --sample_rate 15 --checkpoint_rate 50 --epochs 210 --small false --gpu_pool 1 --noise_std 0.08 --noise_fade 0.25 --config mixed64
 python3 main.py --sample_rate 15 --checkpoint_rate 50 --epochs 210 --small false --gpu_pool 1 --noise_std 0.08 --noise_fade 0.2 --config ffmixed64
 """
