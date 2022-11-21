@@ -62,6 +62,9 @@ def fit(epochs, lr, fixed_latent, generator, discriminator, start_idx=0, name="m
         if "sample_epochs" in checkpoint:
             sample_epochs = checkpoint['sample_epochs']
 
+    fake_images.append(gen_save_samples(generator, args.name, start_idx, fixed_latent, stats, show=False))
+    sample_epochs.append(start_idx)
+
 
     trainer = Trainer(discriminator, generator, args.bc, device, latent_size)
 
@@ -106,7 +109,7 @@ def fit(epochs, lr, fixed_latent, generator, discriminator, start_idx=0, name="m
                 }, os.path.join(args.name, '{}_{:0=4d}.pth'.format(name, epoch + 1)))
                 print("saved checkpoint {}_{:0=4d}.pth".format(name, epoch + 1))
 
-    train_summary(fake_images,losses_g,losses_d,fake_scores,real_scores,sample_epochs,epochs,
+    train_summary(fake_images,losses_g,losses_d,fake_scores,real_scores,sample_epochs,
                   '{}_{}_{}_lr{}_noise{}_{}'.format(args.image_size,
                                                          generator.__class__.__name__,
                                                          discriminator.__class__.__name__,
@@ -178,7 +181,6 @@ if __name__ == '__main__':
     os.makedirs(args.name, exist_ok=True)
 
     fixed_latent = torch.randn(64, latent_size, 1, 1, device=device)
-    gen_save_samples(model.generator, args.name, 0, fixed_latent, stats)
     history = fit(args.epochs, args.lr, fixed_latent, model.generator, model.discriminator, start_idx=args.start,
                   std=args.noise_std, fade_noise=((args.noise_fade * args.noise_std > 0), args.noise_fade))
     print('done')

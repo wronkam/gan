@@ -40,18 +40,17 @@ def gen_save_samples(generator, sample_dir, index, latent_tensors, stats, show=T
             fig, ax = plt.subplots(figsize=(8, 8))
             ax.set_xticks([]);
             ax.set_yticks([])
-            ax.imshow(make_grid(fake_images.cpu().detach(), nrow=8).permute(1, 2, 0))
+            ax.imshow(make_grid(fake_images.cpu().detach(), nrow=8).permute(1, 2, 0),vmin=-1,vmax=1)
         return fake_images
-def train_summary(fakes,loss_g,loss_d,score_fake,score_reall,sample_epochs,epochs,name,target_res=128,prefix=''):
+def train_summary(fakes,loss_g,loss_d,score_fake,score_reall,sample_epochs,name,prefix=''):
     print(name)
-    # writer = FFMpegWriter(fps=2)
     fig = plt.figure(figsize=(18, 12), layout="constrained")
     spec = fig.add_gridspec(4, 8,left=0.05, right=0.95,hspace=1,wspace=1)
     axd = []
     axd.append(fig.add_subplot(spec[0:4, 0:4]))
     axd.append(fig.add_subplot(spec[0:2, 4:8]))
     axd.append(fig.add_subplot(spec[2:4, 4:8]))
-    images = axd[0].imshow(make_grid(fakes[0].cpu().detach(), nrow=8).permute(1, 2, 0),interpolation='bilinear')
+    images = axd[0].imshow(make_grid((fakes[0].cpu().detach()+1)/2, nrow=8).permute(1, 2, 0),vmax=1,vmin=0,interpolation_stage='rgba')
 
     axd[1].set_title('Loss')
     loss_line_g, =axd[1].plot([],[],label='gen_loss')
@@ -62,13 +61,13 @@ def train_summary(fakes,loss_g,loss_d,score_fake,score_reall,sample_epochs,epoch
     score_line_r, =axd[2].plot([],[],label='real_ac')
     axd[2].set_ylim(bottom=0,top=1)
     plt.legend()
-    #plt.show()
     print(len(loss_g),len(loss_d),len(score_fake),len(score_reall))
     writer = FFMpegWriter(fps=0.5)
     with writer.saving(fig,prefix+name+'.mp4',dpi=100):
         for idx,ep in enumerate(sample_epochs):
-            axd[0].set_title('epoch: {}'.format(ep))
-            images.set_data(make_grid(fakes[idx].cpu().detach(), nrow=8).permute(1, 2, 0))
+            ep+=1
+            axd[0].set_title('epoch: {}'.format(ep+1))
+            images.set_data(make_grid((fakes[idx].cpu().detach()+1)/2, nrow=8).permute(1, 2, 0))
             loss_line_g.set_data(range(ep),loss_g[:ep])
             axd[1].set_xlim(left=-2,right=ep+2)
             axd[1].set_ylim(bottom=min(loss_g[:ep]+loss_d[:ep]), top=max(loss_g[:ep]+loss_d[:ep]))
