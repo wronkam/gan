@@ -57,6 +57,11 @@ def fit(epochs, lr, fixed_latent, generator, discriminator, start_idx=0, name="m
         opt_d.load_state_dict(checkpoint["opt_d_sd"])
         losses_d = checkpoint["loss_d"]
         fixed_latent = checkpoint["fixed_latent"]
+        if "fake_images" in checkpoint:
+            fake_images = checkpoint['fake_images']
+        if "sample_epochs" in checkpoint:
+            sample_epochs = checkpoint['sample_epochs']
+
 
     trainer = Trainer(discriminator, generator, args.bc, device, latent_size)
 
@@ -95,12 +100,14 @@ def fit(epochs, lr, fixed_latent, generator, discriminator, start_idx=0, name="m
                     "epoch": epoch + 1, "gen_sd": generator.state_dict(), "opt_g_sd": opt_g.state_dict(),
                     "loss_g": losses_g,
                     "dis_sd": discriminator.state_dict(), "opt_d_sd": opt_d.state_dict(), "loss_d": losses_d,
-                    "fixed_latent": fixed_latent
+                    "fixed_latent": fixed_latent,
+                    "fake_images": fake_images,
+                    "sample_epochs":sample_epochs,
                 }, os.path.join(args.name, '{}_{:0=4d}.pth'.format(name, epoch + 1)))
                 print("saved checkpoint {}_{:0=4d}.pth".format(name, epoch + 1))
 
     train_summary(fake_images,losses_g,losses_d,fake_scores,real_scores,sample_epochs,epochs,
-                  '{}_{}_{}_{}_lr{}_noise{}_{}'.format(args.name,args.image_size,
+                  '{}_{}_{}_lr{}_noise{}_{}'.format(args.image_size,
                                                          generator.__class__.__name__,
                                                          discriminator.__class__.__name__,
                                                          str(round(args.lr,6))[2:],str(round(args.noise_std,6))[2:],
@@ -134,10 +141,6 @@ if __name__ == '__main__':
         latent_size = 64
         image_size = 64
         model = GAN(GeneratorResidual64(latent_size,device).to(device), DiscriminatorResidual64().to(device))
-    elif args.config == 'mixed64':
-        latent_size = 64
-        image_size = 64
-        model = GAN(GeneratorSkip64(latent_size,device).to(device), DiscriminatorResidual64().to(device))
     elif args.config == 'FFMixed64':
         latent_size = 32
         image_size = 64
@@ -149,7 +152,7 @@ if __name__ == '__main__':
 
     args.image_size = image_size
     if args.name == '':
-        args.name ='{}_{}_{}_{}_lr{}_noise{}_{}'.format(args.name, args.image_size,
+        args.name ='{}_{}_{}_lr{}_noise{}_{}'.format(args.image_size,
                                          model.generator.__class__.__name__,
                                          model.discriminator.__class__.__name__,
                                          str(round(args.lr, 6))[2:], str(round(args.noise_std, 6))[2:],
@@ -180,3 +183,7 @@ if __name__ == '__main__':
                   std=args.noise_std, fade_noise=((args.noise_fade * args.noise_std > 0), args.noise_fade))
     print('done')
 
+"""
+example run:
+python3 main.py --sample_rate 10 --checkpoint_rate 50 --epochs 200 --small False --gpu_pool 1 --noise_std 0.08 --noise_fade 0.3 --config FFMixed64
+"""
