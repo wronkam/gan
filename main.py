@@ -10,6 +10,7 @@ from models import GAN, Generator, Discriminator
 from models64 import *
 from train import Trainer
 from util import *
+from fid import calculate_fid
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--source', type=str, help='path to inputs folder', default='organic',required=False)
@@ -48,7 +49,7 @@ def fit(epochs, lr, fixed_latent, generator, discriminator, start_idx=0, name="m
     opt_d = torch.optim.Adam(discriminator.parameters(), lr=lr, betas=(0.5, 0.999))
     opt_g = torch.optim.Adam(generator.parameters(), lr=lr, betas=(0.5, 0.999))
     if start_idx != 0:  # load model
-        checkpoint = torch.load(os.path.join(args.name, '{}_{0:0=4d}.pth'.format(name, start_idx)))
+        checkpoint = torch.load(os.path.join(args.name, '{}_{:0=4d}.pth'.format(name, start_idx)))
         start_idx = checkpoint["epoch"]
         generator.load_state_dict(checkpoint["gen_sd"])
         opt_g.load_state_dict(checkpoint["opt_g_sd"])
@@ -62,8 +63,9 @@ def fit(epochs, lr, fixed_latent, generator, discriminator, start_idx=0, name="m
         if "sample_epochs" in checkpoint:
             sample_epochs = checkpoint['sample_epochs']
 
-    fake_images.append(gen_save_samples(generator, args.name, start_idx, fixed_latent, stats, show=False))
-    sample_epochs.append(start_idx)
+    if start_idx==0:
+        fake_images.append(gen_save_samples(generator, args.name, start_idx, fixed_latent, stats, show=False))
+        sample_epochs.append(start_idx)
 
 
     trainer = Trainer(discriminator, generator, args.bc, device, latent_size)
@@ -109,13 +111,33 @@ def fit(epochs, lr, fixed_latent, generator, discriminator, start_idx=0, name="m
                 }, os.path.join(args.name, '{}_{:0=4d}.pth'.format(name, epoch + 1)))
                 print("saved checkpoint {}_{:0=4d}.pth".format(name, epoch + 1))
 
-    train_summary(fake_images,losses_g,losses_d,fake_scores,real_scores,sample_epochs,
+    idx = 1
+    target = 2000//args.bc + 1
+    samples = args.bc * target
+    reals = None
+    # get shape
+    for real,_ in train_dl:
+        reals = real
+        break
+    # load enough batches from dataLoader
+    for real,_ in train_dl:
+        if idx==target:
+            break
+        idx+=1
+        reals = torch.cat((reals,real),0)
+    fakes = generator(torch.randn(samples, latent_size, 1, 1, device=device))
+    print(reals.shape, fakes.shape)
+    fid_score = calculate_fid(fakes.cpu().detach().numpy(),reals.cpu().detach().numpy(),bc=samples)
+    print("FID:",fid_score)
+
+    train_summary(fake_images,losses_g,losses_d,sample_epochs,
                   '{}_{}_{}_lr{}_noise{}_{}'.format(args.image_size,
                                                          generator.__class__.__name__,
                                                          discriminator.__class__.__name__,
                                                          str(round(args.lr,6))[2:],str(round(args.noise_std,6))[2:],
                                                          str(round(args.noise_fade,4))[2:]),
-                  prefix=args.name+'/')
+                  fid_score,prefix=args.name+'/')
+
     return losses_g, losses_d, real_scores, fake_scores
 
 
