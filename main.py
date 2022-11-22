@@ -22,7 +22,7 @@ parser.add_argument('--lr', type=float, help='learning rate', default=0.0002,req
 parser.add_argument('--bc', type=int, help='batch size', default=64,required=False)
 parser.add_argument('--noise_std', type=float, help='standard deviation of noise', default=0.0,required=False)
 parser.add_argument('--noise_fade', type=float, help='share of epochs with noise', default=1 / 3,required=False)
-parser.add_argument('--small', type=bool, help='use small training set', default=True,required=False)
+parser.add_argument('--small', type=bool, help='use small training set', default=False,required=False)
 parser.add_argument('--small_size', type=int, help='small training set size', default=5000,required=False)
 parser.add_argument('--config', type=str, help='config name', default=None,required=False)
 parser.add_argument('--gpu_pool', type=int, help="num of GPU's to draw from", default=1,required=False)
@@ -122,6 +122,7 @@ def fit(epochs, lr, fixed_latent, generator, discriminator, start_idx=0, name="m
 # 8k images, 32*32, ls=64, eps=10 , bs=256 => 1782 s, results= okeish
 if __name__ == '__main__':
 
+    print("Train on small = ",args.small)
     torch.manual_seed(42)
     args.config = args.config.lower()
     device = get_default_device(random.randint(0, args.gpu_pool-1))
@@ -188,11 +189,11 @@ if __name__ == '__main__':
 
 """
 example run:
-python3 main.py --sample_rate 15 --checkpoint_rate 50 --epochs 210 --small false --gpu_pool 1 --noise_std 0.00 --noise_fade 0.0 --config simple32
-python3 main.py --sample_rate 15 --checkpoint_rate 50 --epochs 210 --small false --gpu_pool 1 --noise_std 0.00 --noise_fade 0.0 --config simple64
-python3 main.py --sample_rate 10 --checkpoint_rate 50 --epochs 200 --small False --gpu_pool 1 --noise_std 0.08 --noise_fade 0.25 --config skip64
-python3 main.py --sample_rate 15 --checkpoint_rate 50 --epochs 210 --small false --gpu_pool 1 --noise_std 0.08 --noise_fade 0.25 --config residual64 
-python3 main.py --sample_rate 15 --checkpoint_rate 50 --epochs 210 --small false --gpu_pool 1 --noise_std 0.24 --noise_fade 0.35 --config residual64 --name 64_residual_noised
-python3 main.py --sample_rate 15 --checkpoint_rate 50 --epochs 210 --small false --gpu_pool 1 --noise_std 0.08 --noise_fade 0.25 --config mixed64
-python3 main.py --sample_rate 15 --checkpoint_rate 50 --epochs 210 --small false --gpu_pool 1 --noise_std 0.08 --noise_fade 0.2 --config ffmixed64
+python main.py --sample_rate 15 --checkpoint_rate 50 --epochs 210  --gpu_pool 1 --noise_std 0.00 --noise_fade 0.0 --config simple32
+python main.py --sample_rate 15 --checkpoint_rate 50 --epochs 210  --gpu_pool 1 --noise_std 0.00 --noise_fade 0.0 --config simple64
+python main.py --sample_rate 10 --checkpoint_rate 50 --epochs 200  --gpu_pool 1 --noise_std 0.08 --noise_fade 0.25 --config skip64
+python main.py --sample_rate 15 --checkpoint_rate 50 --epochs 210  --gpu_pool 1 --noise_std 0.08 --noise_fade 0.25 --config residual64 
+python main.py --sample_rate 15 --checkpoint_rate 50 --epochs 210  --gpu_pool 1 --noise_std 0.24 --noise_fade 0.35 --config residual64 --name 64_residual_noised
+python main.py --sample_rate 15 --checkpoint_rate 50 --epochs 210  --gpu_pool 1 --noise_std 0.08 --noise_fade 0.25 --config mixed64
+python main.py --sample_rate 15 --checkpoint_rate 50 --epochs 210  --gpu_pool 1 --noise_std 0.08 --noise_fade 0.2 --config ffmixed64
 """
