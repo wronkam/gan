@@ -29,7 +29,7 @@ parser.add_argument('--small', type=bool, help='use small training set', default
 parser.add_argument('--small_size', type=int, help='small training set size', default=5000,required=False)
 parser.add_argument('--config', type=str, help='config name', default=None,required=False)
 parser.add_argument('--gpu_pool', type=int, help="num of GPU's to draw from", default=1,required=False)
-parser.add_argument('--fid_sample', type=int, help="num of images to compare ", default=2047,required=False)
+parser.add_argument('--fid_sample', type=int, help="num of images to compare ", default=10200,required=False)
 
 args = parser.parse_args()
 
