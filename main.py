@@ -2,6 +2,8 @@ import argparse
 import random
 import time
 
+import numpy
+import torch
 import torchvision.transforms as T
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
@@ -27,6 +29,7 @@ parser.add_argument('--small', type=bool, help='use small training set', default
 parser.add_argument('--small_size', type=int, help='small training set size', default=5000,required=False)
 parser.add_argument('--config', type=str, help='config name', default=None,required=False)
 parser.add_argument('--gpu_pool', type=int, help="num of GPU's to draw from", default=1,required=False)
+parser.add_argument('--fid_sample', type=int, help="num of images to compare ", default=2047,required=False)
 
 args = parser.parse_args()
 
@@ -112,22 +115,25 @@ def fit(epochs, lr, fixed_latent, generator, discriminator, start_idx=0, name="m
                 print("saved checkpoint {}_{:0=4d}.pth".format(name, epoch + 1))
 
     idx = 1
-    target = 2000//args.bc + 1
+    target = args.fid_sample//args.bc + 1
     samples = args.bc * target
     reals = None
-    # get shape
-    for real,_ in train_dl:
-        reals = real
-        break
     # load enough batches from dataLoader
+    fids =[]
     for real,_ in train_dl:
         if idx==target:
             break
         idx+=1
-        reals = torch.cat((reals,real),0)
-    fakes = generator(torch.randn(samples, latent_size, 1, 1, device=device))
-    print(reals.shape, fakes.shape)
-    fid_score = calculate_fid(fakes.cpu().detach().numpy(),reals.cpu().detach().numpy(),bc=samples)
+        if reals is None:
+            reals = real
+        else:
+            reals = torch.cat((reals,real),0)
+        if len(reals) > 2000:
+            fakes = generator(torch.randn(len(reals), latent_size, 1, 1, device=device))
+            print(reals.shape, fakes.shape)
+            fids.append(calculate_fid(fakes.cpu().detach().numpy(),reals.cpu().detach().numpy(),bc=len(reals),im_size=image_size))
+            reals = None
+    fid_score = numpy.mean(numpy.array(fids))
     print("FID:",fid_score)
 
     train_summary(fake_images,losses_g,losses_d,sample_epochs,
@@ -211,11 +217,11 @@ if __name__ == '__main__':
 
 """
 example run:
-python main.py --sample_rate 15 --checkpoint_rate 50 --epochs 210  --gpu_pool 1 --noise_std 0.00 --noise_fade 0.0 --config simple32
-python main.py --sample_rate 15 --checkpoint_rate 50 --epochs 210  --gpu_pool 1 --noise_std 0.00 --noise_fade 0.0 --config simple64
-python main.py --sample_rate 10 --checkpoint_rate 50 --epochs 200  --gpu_pool 1 --noise_std 0.08 --noise_fade 0.25 --config skip64
-python main.py --sample_rate 15 --checkpoint_rate 50 --epochs 210  --gpu_pool 1 --noise_std 0.08 --noise_fade 0.25 --config residual64 
-python main.py --sample_rate 15 --checkpoint_rate 50 --epochs 210  --gpu_pool 1 --noise_std 0.24 --noise_fade 0.35 --config residual64 --name 64_residual_noised
-python main.py --sample_rate 15 --checkpoint_rate 50 --epochs 210  --gpu_pool 1 --noise_std 0.08 --noise_fade 0.25 --config mixed64
-python main.py --sample_rate 15 --checkpoint_rate 50 --epochs 210  --gpu_pool 1 --noise_std 0.08 --noise_fade 0.2 --config ffmixed64
+python main.py --sample_rate 15 --checkpoint_rate 30 --epochs 210  --gpu_pool 1 --noise_std 0.00 --noise_fade 0.0 --config simple32
+python main.py --sample_rate 15 --checkpoint_rate 30 --epochs 210  --gpu_pool 1 --noise_std 0.00 --noise_fade 0.0 --config simple64
+python main.py --sample_rate 10 --checkpoint_rate 30 --epochs 210  --gpu_pool 1 --noise_std 0.08 --noise_fade 0.25 --config skip64
+python main.py --sample_rate 15 --checkpoint_rate 30 --epochs 210  --gpu_pool 1 --noise_std 0.08 --noise_fade 0.25 --config residual64 
+python main.py --sample_rate 15 --checkpoint_rate 30 --epochs 210  --gpu_pool 1 --noise_std 0.24 --noise_fade 0.35 --config residual64 --name 64_residual_noised
+python main.py --sample_rate 15 --checkpoint_rate 30 --epochs 210  --gpu_pool 1 --noise_std 0.08 --noise_fade 0.25 --config mixed64
+python main.py --sample_rate 15 --checkpoint_rate 30 --epochs 210  --gpu_pool 1 --noise_std 0.08 --noise_fade 0.2 --config ffmixed64
 """

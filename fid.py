@@ -24,24 +24,24 @@ def scale_images(images, new_shape):
 
 
 # calculate frechet inception distance
-def calculate_fid(images1, images2,bc=64):
+def calculate_fid(images1, images2,bc=64,im_size=64):
     # define two fake collections of images
-    images1 = images1.reshape((bc, 32, 32, 3))
-    images2 = images2.reshape((bc, 32, 32, 3))
+    images1 = images1.reshape((bc, im_size, im_size, 3))
+    images2 = images2.reshape((bc, im_size, im_size, 3))
     # convert [-1,1] to [0,255]
     images1 =255*(images1+1)/2
     images2 =255*(images2+1)/2
     print('Prepared', images1.shape, images2.shape)
     # resize images
-    images1 = scale_images(images1, (96, 96, 3))
-    images2 = scale_images(images2, (96, 96, 3))
+    images1 = scale_images(images1, (80, 80, 3))
+    images2 = scale_images(images2, (80, 80, 3))
     print('Scaled', images1.shape, images2.shape)
     # pre-process images
     images1 = preprocess_input(images1)
     images2 = preprocess_input(images2)
     # fid between images1 and images1
     # calculate activations
-    model = InceptionV3(include_top=False, pooling='avg', input_shape=(96, 96, 3))
+    model = InceptionV3(include_top=False, pooling='avg', input_shape=(80, 80, 3))
     act1 = model.predict(images1)
     act2 = model.predict(images2)
     # calculate mean and covariance statistics
